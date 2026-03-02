@@ -1,73 +1,123 @@
-# AIマシュマロ 🍡
+# AIマシュマロ
 
 匿名で質問するとAIキャラクター「マシュ」が個性的に回答するQ&Aサービス。
 
+**URL:** https://ai.ezoai.jp
+
+---
+
 ## 概要
 
-- 匿名で質問を投稿 → AIが即座に個性的な回答
-- 各回答に専用URLが発行されSNSでシェア可能
-- Twitter/X・LINEシェア対応
+- アカウント不要・完全無料で質問できる匿名Q&Aサービス
+- AIキャラクター「マシュ」（Claude Haiku）が日本語で個性的に回答
+- 各回答はユニークURLで共有可能 → SNS拡散を促進
+- OGP対応（Twitter/X、LINE）
 
-## Tech Stack
+## 技術スタック
 
-- **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript (strict)
-- **Styling**: Tailwind CSS + shadcn/ui
-- **AI**: Anthropic Claude API (claude-haiku-4-5)
-- **Storage**: Vercel KV (開発時はin-memory)
-- **Hosting**: Vercel
-- **Domain**: ai.ezoai.jp
+| 項目 | 技術 |
+|------|------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS + shadcn/ui |
+| AI | Anthropic Claude API (claude-haiku-4-5) |
+| Storage | Vercel KV (dev: in-memory fallback) |
+| Hosting | Vercel |
+| Domain | ai.ezoai.jp |
+
+## ページ構成
+
+| パス | 説明 |
+|------|------|
+| `/` | トップ: 質問フォーム + 最近の回答一覧 |
+| `/q/[id]` | Q&A詳細: OGP対応 + SNSシェアボタン |
+| `/about` | サービス説明 + AIキャラクター紹介 |
 
 ## セットアップ
 
 ```bash
 npm install
-# .env.local に ANTHROPIC_API_KEY を設定
+```
+
+### 環境変数
+
+`.env.local` を作成:
+
+```env
+# Anthropic API
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Vercel KV（本番用。未設定時はin-memoryで動作）
+KV_REST_API_URL=https://...
+KV_REST_API_TOKEN=...
+
+# サイトURL（OGP画像生成に使用）
+NEXT_PUBLIC_SITE_URL=https://ai.ezoai.jp
+
+# Google Analytics（任意）
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+```
+
+### 開発サーバー起動
+
+```bash
 npm run dev
 ```
 
-## 環境変数
+http://localhost:3000 で確認。
 
-| 変数名 | 説明 | 必須 |
-|--------|------|------|
-| `ANTHROPIC_API_KEY` | Anthropic API Key | ✅ |
-| `KV_REST_API_URL` | Vercel KV URL (本番) | - |
-| `KV_REST_API_TOKEN` | Vercel KV Token (本番) | - |
-| `NEXT_PUBLIC_SITE_URL` | サイトURL | - |
-| `NEXT_PUBLIC_GA_ID` | Google Analytics ID | - |
-| `GITHUB_TOKEN` | フィードバックをGitHub Issueに投稿 | - |
+### ビルド
+
+```bash
+npm run build
+```
+
+## デプロイ
+
+Vercel にデプロイ。環境変数を Vercel Dashboard で設定する。
+
+```bash
+vercel --prod
+```
 
 ## ディレクトリ構造
 
 ```
 src/
   app/
-    page.tsx              # ホーム (質問フォーム + 一覧)
-    about/page.tsx        # サービス説明
-    q/[id]/page.tsx       # Q&A詳細 (シェアページ)
-    api/questions/        # API Routes
+    layout.tsx              # Root layout（メタデータ・フォント・GA）
+    page.tsx                # トップページ（質問フォーム + 一覧）
+    about/page.tsx          # Aboutページ
+    q/[id]/page.tsx         # Q&A詳細（SSR + OGP）
+    api/
+      questions/route.ts    # GET（一覧）/ POST（質問投稿→AI回答）
+      questions/[id]/route.ts # GET（個別取得）
+      feedback/route.ts     # フィードバック送信
+    opengraph-image.tsx     # OGP画像（ホーム）
+    q/[id]/opengraph-image.tsx # OGP画像（Q&A詳細）
+    robots.ts               # robots.txt
+    sitemap.ts              # sitemap.xml
+    not-found.tsx           # 404ページ
   components/
-    Header.tsx / Footer.tsx
-    QuestionForm.tsx      # 質問投稿フォーム
-    QACard.tsx            # Q&Aカード
-    ShareButtons.tsx      # SNSシェアボタン
+    QuestionForm.tsx        # 質問投稿フォーム
+    QACard.tsx              # Q&Aカード
+    ShareButtons.tsx        # SNSシェアボタン
+    Header.tsx              # ヘッダー
+    Footer.tsx              # フッター
+    FeedbackWidget.tsx      # フィードバックウィジェット
   lib/
-    ai.ts                 # Anthropic API
-    storage.ts            # Vercel KV / in-memory
-    types.ts              # 型定義
+    ai.ts                   # Anthropic API呼び出し
+    storage.ts              # Vercel KV / in-memoryストレージ
+    rateLimit.ts            # レート制限
+    types.ts                # 型定義
+    utils.ts                # ユーティリティ
 ```
 
-## 進捗
+## ステータス
 
-- [x] プロジェクト初期化 (Night 1)
-- [x] アーキテクチャ設計
-- [x] 共通コンポーネント
-- [x] ページ実装 (Home / Q&A詳細 / About)
-- [x] API Routes (質問投稿・一覧・詳細)
-- [x] フィードバックウィジェット & `/api/feedback` (Night 2)
-- [x] Google Analytics サポート (NEXT_PUBLIC_GA_ID) (Night 2)
-- [x] IPベースレート制限 (5件/10分) (Night 3)
-- [x] Toastフィードバック通知 (sonner) (Night 3)
-- [x] 履歴50件表示に拡張 (Night 3)
-- [ ] Vercelデプロイ
-- [ ] ドメイン設定 (ai.ezoai.jp)
+- [x] 実装完了
+- [x] QA完了（build / lint / TypeScript エラーなし）
+- [x] OGP対応
+- [x] SEO対応（robots.txt / sitemap.xml / JSON-LD）
+- [x] アクセシビリティ基本対応
+- [ ] 本番デプロイ（Vercel KV環境変数設定後）
